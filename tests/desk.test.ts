@@ -234,4 +234,14 @@ describe("store file", () => {
     const second = loadStore();
     expect(second.data.leads[0].name).toBe("Edited Lead");
   });
+
+  it("keeps the seed in memory when the filesystem rejects the write", () => {
+    process.env.STORE_PATH = "/dev/null/northwind-store.json";
+    const first = loadStore();
+    expect(first.data.bookings.length).toBeGreaterThan(0);
+    first.data.leads[0].name = "Kept In Memory";
+    saveStore(first);
+    const second = loadStore();
+    expect(second.data.leads[0].name).toBe("Kept In Memory");
+  });
 });

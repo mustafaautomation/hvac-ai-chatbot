@@ -315,8 +315,15 @@ export class DemoStore {
   }
 }
 
+const LOCAL_STORE = path.join(process.cwd(), "data", "store.json");
+const SERVERLESS_STORE = path.join("/tmp", "northwind-store.json");
+
+let memoryStore: { path: string; store: DemoStore } | null = null;
+
 export function storeFilePath(): string {
-  return process.env.STORE_PATH ?? path.join(process.cwd(), "data", "store.json");
+  if (process.env.STORE_PATH) return process.env.STORE_PATH;
+  if (process.env.VERCEL) return SERVERLESS_STORE;
+  return LOCAL_STORE;
 }
 
 export function loadStore(): DemoStore {
@@ -326,9 +333,13 @@ export function loadStore(): DemoStore {
     const parsed = JSON.parse(raw) as StoreData;
     if (!parsed.bookings || !parsed.leads || !parsed.handoffs) throw new Error("bad store");
     parsed.conversations ??= [];
-    return new DemoStore(parsed);
+    const store = new DemoStore(parsed);
+    memoryStore = { path: file, store };
+    return store;
   } catch {
+    if (memoryStore?.path === file) return memoryStore.store;
     const seeded = DemoStore.seeded();
+    memoryStore = { path: file, store: seeded };
     saveStore(seeded);
     return seeded;
   }
@@ -336,8 +347,14 @@ export function loadStore(): DemoStore {
 
 export function saveStore(store: DemoStore): void {
   const file = storeFilePath();
-  fs.mkdirSync(/* turbopackIgnore: true */ path.dirname(file), { recursive: true });
-  const temp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(/* turbopackIgnore: true */ temp, JSON.stringify(store.data, null, 2));
-  fs.renameSync(/* turbopackIgnore: true */ temp, file);
+  memoryStore = { path: file, store };
+  try {
+    fs.mkdirSync(/* turbopackIgnore: true */ path.dirname(file), { recursive: true });
+    const temp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(/* turbopackIgnore: true */ temp, JSON.stringify(store.data, null, 2));
+    fs.renameSync(/* turbopackIgnore: true */ temp, file);
+  } catch {
+    // Vercel's project directory is read-only. /tmp is tried first there.
+    // If that write also fails, this instance keeps the seeded board in memory.
+  }
 }

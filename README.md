@@ -68,6 +68,8 @@ Chat: [http://localhost:4317/chat](http://localhost:4317/chat). Board: [http://l
 
 No keys required. Copy `.env.example` to `.env.local` only if you want Groq or Gemini to choose the tools. The **Use model** button appears when a key is present. If the model call fails, the guided desk answers.
 
+On Vercel the board is written to `/tmp/northwind-store.json` because the project directory is read-only. If that write fails, the instance keeps the seeded board in memory. Locally it stays in `data/store.json`.
+
 ```bash
 npm test          # unit tests, including channel payloads
 npm run eval      # 24 offline cases, writes docs/eval-report.md
