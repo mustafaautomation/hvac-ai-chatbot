@@ -4,7 +4,9 @@
 
 Portfolio demo by Quvantic - fictional brand, not a real business / not client work.
 
-**Northwind Comfort Heating & Air** is a made-up Austin shop. The chat takes a homeowner from a problem to a safe check, a sample price, an arrival window, and a confirmation card. Gas and carbon monoxide skip the troubleshooting and open a handoff. Nothing here pages a real technician.
+**Northwind Comfort Heating & Air** is a made-up Austin shop. Ava, the desk, takes a homeowner from a problem to a safe check, an itemized sample range, open time chips, and a confirmation card. Gas and carbon monoxide skip the troubleshooting and open a handoff. Nothing here pages a real technician.
+
+The closed launcher shows nudge pills and, after a few seconds, a teaser. The header shows **Demo mode** until a live model answers, then **Live AI**. Replies stream with a phase label, citation chips, and follow-up chips.
 
 Live demo (when deployed): [https://hvac-chat.quvantic.com](https://hvac-chat.quvantic.com)
 
@@ -14,9 +16,9 @@ Author: Muhammad Mustafa · [mustafaautomation](https://github.com/mustafaautoma
 
 - Landing page with an architecture walk-through, plus the full chat at `/chat`.
 - Embeddable widget: one script tag injects a launcher and an iframe. Try it on `/embed-demo`.
-- Retrieval over 24 markdown guides in `kb/`, chunked and ranked with BM25 plus a local hash embedding. No paid vector API. Answers cite the guide. Low confidence opens a handoff instead of guessing.
+- Retrieval over 25 markdown guides in `kb/`, chunked and ranked with BM25 plus a local hash embedding. No paid vector API. Answers cite the guide. Low confidence opens a handoff instead of guessing.
 - Tools, validated with Zod, against a mock board: service area, itemized quote, slots, book, lookup, reschedule, cancel, CRM lead, emergency dispatch.
-- Human handoff for “talk to a person,” frustration, sensitive payment digits, and questions the guides don’t cover. `/admin` shows the calendar, leads, handoffs, and the conversation inbox with tool calls.
+- Human handoff for “talk to a person,” frustration, sensitive payment digits, and questions the guides don’t cover. The header switches to Riley Cho, and `/admin` can resume the bot. The board is a two-pane inbox plus calendar, leads, and handoffs.
 - WhatsApp Cloud API and Messenger webhooks call the same agent. See [docs/channels.md](docs/channels.md).
 - Guardrails: prompt-injection refusal, off-topic refusal, PII masked in logs.
 - Offline demo engine so the desk still works with zero API keys. Optional Groq (`llama-3.3-70b-versatile`) with Gemini (`gemini-2.0-flash`) as fallback.
@@ -94,6 +96,10 @@ Offline demo engine, 24 cases, 0 failed. Full notes: [docs/eval-report.md](docs/
 | Guardrails | 3 | pass |
 
 Screenshots: `docs/screenshots/`.
+
+![Landing](docs/screenshots/landing.png)
+![Quote and time chips](docs/screenshots/quote.png)
+![Booking confirmation](docs/screenshots/booking.png)
 
 ## Deploy
 
