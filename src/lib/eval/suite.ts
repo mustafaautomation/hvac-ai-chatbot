@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { llmConfigured } from "@/lib/llm/live";
+import { runAgent } from "@/lib/agent/run";
 import { runGuided } from "@/lib/orchestrator";
 import { DemoStore } from "@/lib/store";
 import type { ChatPart, Draft, ToolTrace } from "@/lib/types";
@@ -39,19 +41,36 @@ export function loadCases(): EvalCase[] {
   return JSON.parse(fs.readFileSync(file, "utf8")) as EvalCase[];
 }
 
-export function runCase(testCase: EvalCase): EvalResult {
+export function evalMode(): "live" | "offline" {
+  return process.env.EVAL_MODE === "live" && llmConfigured() ? "live" : "offline";
+}
+
+export async function runCase(testCase: EvalCase): Promise<EvalResult> {
   const store = testCase.seed ? DemoStore.seeded(NOW) : DemoStore.empty();
   const steps = testCase.steps ?? [testCase.text ?? ""];
+  const live = evalMode() === "live";
   let draft: Draft = {};
   let tools: ToolTrace[] = [];
   let parts: ChatPart[] = [];
   let text = "";
+  const history: { role: "user" | "assistant"; text: string }[] = [];
   for (const step of steps) {
-    const turn = runGuided({ store, draft, text: step, now: NOW });
+    const turn = live
+      ? await runAgent({
+          store,
+          channel: "web",
+          draft,
+          text: step,
+          history,
+          engine: "model",
+          now: NOW,
+        })
+      : runGuided({ store, draft, text: step, history, now: NOW });
     draft = turn.draft;
     tools = tools.concat(turn.tools);
     parts = turn.message.parts;
     text = turn.message.text;
+    history.push({ role: "user", text: step }, { role: "assistant", text });
   }
   const failures: string[] = [];
   const expect = testCase.expect;
@@ -99,9 +118,10 @@ export function runCase(testCase: EvalCase): EvalResult {
   return { id: testCase.id, pass: failures.length === 0, failures };
 }
 
-export function runSuite(): { results: EvalResult[]; passed: number; failed: number } {
-  const results = loadCases().map(runCase);
+export async function runSuite(): Promise<{ mode: "live" | "offline"; results: EvalResult[]; passed: number; failed: number }> {
+  const results = await Promise.all(loadCases().map((testCase) => runCase(testCase)));
   return {
+    mode: evalMode(),
     results,
     passed: results.filter((result) => result.pass).length,
     failed: results.filter((result) => !result.pass).length,
@@ -116,7 +136,7 @@ export function writeReport(suite: ReturnType<typeof runSuite>): void {
   const lines = [
     "# Eval report",
     "",
-    `Offline demo engine. ${suite.passed} passed, ${suite.failed} failed, ${suite.results.length} cases.`,
+    `${suite.mode === "live" ? "Live model" : "Offline demo engine"}. ${suite.passed} passed, ${suite.failed} failed, ${suite.results.length} cases.`,
     "",
     "| Case | Result | Notes |",
     "| --- | --- | --- |",

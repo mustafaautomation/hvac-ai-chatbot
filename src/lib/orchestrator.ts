@@ -18,20 +18,24 @@ import { checkServiceArea } from "@/lib/service-area";
 import type { DemoStore } from "@/lib/store";
 import { SERVICE_LABELS, type ChatAction, type ChatPart, type Draft, type ServiceType, type Slot, type ToolTrace, type TurnResult, type Urgency } from "@/lib/types";
 
+type Utterance = { role: "user" | "assistant"; text: string };
+
 export function runGuided(input: {
   store: DemoStore;
   draft?: Draft;
   text?: string;
   action?: ChatAction;
+  history?: Utterance[];
   now?: Date;
 }): TurnResult {
   const now = input.now ?? new Date();
   const text = (input.text ?? "").trim();
+  const history = input.history ?? [];
   let draft: Draft = { ...(input.draft ?? {}) };
   const tools: ToolTrace[] = [];
 
   if (text && detectEmergency(text)) {
-    return safetyTurn(input.store, draft, text, tools);
+    return safetyTurn(input.store, draft, text, tools, history);
   }
   if (text && detectInjection(text)) {
     return reply(draft, tools, INJECTION_REPLY, [
@@ -46,7 +50,7 @@ export function runGuided(input: {
   if (text && detectSensitivePii(text)) {
     const handoff = input.store.addHandoff({
       reason: "human",
-      summary: maskPii(text),
+      summary: ticketSummary(history, text, "Sensitive digits withheld."),
       safetyMessage: PII_REPLY,
       customerName: draft.name,
       phone: draft.phone,
@@ -59,7 +63,7 @@ export function runGuided(input: {
     return reply(draft, tools, PII_REPLY, [{ type: "handoff", handoff, tone: "human" }]);
   }
   if (text && detectFrustration(text)) {
-    return openHumanHandoff(input.store, draft, tools, text, "The caller is frustrated and needs a person.");
+    return openHumanHandoff(input.store, draft, tools, text, history, "The caller is frustrated and needs a person.");
   }
   if (input.action) {
     return runAction(input.store, draft, input.action, tools, now);
@@ -107,7 +111,7 @@ export function runGuided(input: {
   if (intent.lookup && (code || draft.phone)) {
     return lookupVisit(input.store, draft, tools, code ?? draft.phone ?? text);
   }
-  if (intent.human) return openHumanHandoff(input.store, draft, tools, text, "Caller asked for a person.");
+  if (intent.human) return openHumanHandoff(input.store, draft, tools, text, history, "Caller asked for a person.");
   if (intent.callback && !intent.problem && !intent.quote) {
     return callbackLead(input.store, draft, tools, text);
   }
@@ -117,15 +121,23 @@ export function runGuided(input: {
     return areaTurn(draft, tools, text);
   }
   if (wantsVisit) return visitTurn(input.store, draft, tools, now, text, intent);
-  return knowledgeTurn(input.store, draft, tools, text);
+  return knowledgeTurn(input.store, draft, tools, text, history);
 }
 
-function safetyTurn(store: DemoStore, draft: Draft, text: string, tools: ToolTrace[]): TurnResult {
+function ticketSummary(history: Utterance[], text: string, reason: string): string {
+  const lines = [
+    ...history.slice(-6).map((item) => `${item.role}: ${maskPii(item.text)}`),
+    text ? `user: ${maskPii(text)}` : "",
+  ].filter(Boolean);
+  return `${reason}\n${lines.join("\n")}`.slice(0, 700);
+}
+
+function safetyTurn(store: DemoStore, draft: Draft, text: string, tools: ToolTrace[], history: Utterance[]): TurnResult {
   const kind = detectEmergency(text) ?? "gas";
   const copy = safetyCopy(kind);
   const handoff = store.addHandoff({
     reason: kind,
-    summary: text,
+    summary: ticketSummary(history, text, "Safety handoff."),
     safetyMessage: copy.message,
     customerName: draft.name,
     phone: draft.phone,
@@ -134,7 +146,7 @@ function safetyTurn(store: DemoStore, draft: Draft, text: string, tools: ToolTra
   const lead = store.addLead({
     name: draft.name || "Emergency caller",
     phone: draft.phone || "Not given",
-    issue: text,
+    issue: maskPii(text),
     address: draft.address,
     zip: draft.zip,
     serviceType: draft.serviceType,
@@ -402,9 +414,10 @@ function openHumanHandoff(
   draft: Draft,
   tools: ToolTrace[],
   text: string,
+  history: Utterance[],
   reason: string,
 ): TurnResult {
-  const summary = `${reason} ${maskPii(text)}`.trim();
+  const summary = ticketSummary(history, text, reason);
   const handoff = store.addHandoff({
     reason: "human",
     summary,
@@ -577,7 +590,7 @@ function visitTurn(
   return reply(draft, tools, sentences.join(" "), parts);
 }
 
-function knowledgeTurn(store: DemoStore, draft: Draft, tools: ToolTrace[], text: string): TurnResult {
+function knowledgeTurn(store: DemoStore, draft: Draft, tools: ToolTrace[], text: string, history: Utterance[]): TurnResult {
   const hits = search(tools, text);
   const confident = hits[0] && hits[0].score >= LOW_CONFIDENCE;
   if (!confident) {
@@ -593,7 +606,7 @@ function knowledgeTurn(store: DemoStore, draft: Draft, tools: ToolTrace[], text:
     }
     const handoff = store.addHandoff({
       reason: "human",
-      summary: `I don't know this from the guides: ${maskPii(text)}`,
+      summary: ticketSummary(history, text, "I don't know this from the guides."),
       customerName: draft.name,
       phone: draft.phone,
       safetyMessage: "Low retrieval confidence. A person should answer.",

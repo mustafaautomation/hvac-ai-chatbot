@@ -35,7 +35,7 @@ export async function runAgent(input: {
       now: input.now,
       fetchImpl: input.fetchImpl,
     });
-    result = live ?? runGuided({ store: input.store, draft: input.draft, text, now: input.now });
+    result = live ?? runGuided({ store: input.store, draft: input.draft, text, history: input.history, now: input.now });
     if (!live) {
       result.message.text = `${result.message.text}\n\nThe live model did not answer, so this reply came from the guided desk.`;
       result.engine = "guided";
@@ -47,6 +47,7 @@ export async function runAgent(input: {
       draft: input.draft,
       text,
       action: input.action,
+      history: input.history,
       now: input.now,
     });
   }

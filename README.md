@@ -71,6 +71,7 @@ No keys required. Copy `.env.example` to `.env.local` only if you want Groq or G
 ```bash
 npm test          # unit tests, including channel payloads
 npm run eval      # 24 offline cases, writes docs/eval-report.md
+EVAL_MODE=live npm run eval   # same cases through Groq or Gemini when a key is set
 npm run typecheck
 npm run lint
 npm run build
