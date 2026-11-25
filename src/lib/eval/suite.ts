@@ -128,7 +128,7 @@ export async function runSuite(): Promise<{ mode: "live" | "offline"; results: E
   };
 }
 
-export function writeReport(suite: ReturnType<typeof runSuite>): void {
+export function writeReport(suite: Awaited<ReturnType<typeof runSuite>>): void {
   const jsonPath = path.join(process.cwd(), "docs", "eval-results.json");
   const mdPath = path.join(process.cwd(), "docs", "eval-report.md");
   fs.mkdirSync(path.dirname(jsonPath), { recursive: true });
