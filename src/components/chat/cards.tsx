@@ -268,15 +268,15 @@ function BookingForm({
       <div className="mt-3 grid gap-3">
         <div className="grid gap-1.5">
           <Label htmlFor={`name-${slot.id}`}>Name</Label>
-          <Input id={`name-${slot.id}`} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" className="h-10" />
+          <Input id={`name-${slot.id}`} value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" className="h-10" disabled={disabled} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor={`phone-${slot.id}`}>Mobile</Label>
-          <Input id={`phone-${slot.id}`} value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" inputMode="tel" className="h-10" />
+          <Input id={`phone-${slot.id}`} value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" inputMode="tel" className="h-10" disabled={disabled} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor={`address-${slot.id}`}>Address and ZIP</Label>
-          <Input id={`address-${slot.id}`} value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" className="h-10" />
+          <Input id={`address-${slot.id}`} value={address} onChange={(event) => setAddress(event.target.value)} autoComplete="street-address" className="h-10" disabled={disabled} />
         </div>
       </div>
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}

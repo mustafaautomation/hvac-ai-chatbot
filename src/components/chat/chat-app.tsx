@@ -187,7 +187,7 @@ export function ChatApp({ embedded = false }: { embedded?: boolean }) {
             <MessageBubble
               key={message.id}
               message={message}
-              disabled={busy}
+              disabled={busy || message.id !== messages.findLast((item) => item.role === "assistant")?.id}
               onSelectSlot={(slot) => void send(`I'll take ${slot.label}.`, { type: "select_slot", slotId: slot.id })}
               onBook={(input) => void send(`Book it for ${input.name}, ${input.phone}, ${input.address}.`, { type: "book", ...input })}
               onCancel={(code) => void send(`Cancel ${code}.`, { type: "cancel", confirmationCode: code })}

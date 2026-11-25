@@ -166,6 +166,18 @@ describe("guided desk", () => {
     expect(policy.message.parts.some((item) => item.type === "handoff")).toBe(false);
   });
 
+  it("prices a heat pump instead of an AC repair", () => {
+    const turn = runGuided({
+      store: DemoStore.empty(),
+      text: "What would a heat pump cost for an 1,800 sq ft home in 78703? The old system is 16 years old. No rush.",
+      now: NOW,
+    });
+    const quote = part(turn.message.parts, "quote");
+    expect(quote?.quote.serviceType).toBe("heat_pump");
+    expect(part(turn.message.parts, "slots")?.serviceType).toBe("heat_pump");
+    expect(part(turn.message.parts, "troubleshooting")).toBeUndefined();
+  });
+
   it("does not offer Dallas a window", () => {
     const turn = runGuided({
       store: DemoStore.empty(),

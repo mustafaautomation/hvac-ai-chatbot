@@ -25,6 +25,7 @@ test("cited answer, booking, and gas handoff", async ({ page }) => {
   await page.getByRole("button", { name: "Use sample customer" }).click();
   await page.getByRole("button", { name: "Confirm visit" }).click();
   await expect(page.getByRole("heading", { name: /NW-\d{4}/ })).toBeVisible();
+  await expect(page.getByLabel("Name")).toBeDisabled();
   await page.screenshot({ path: "docs/screenshots/booking.png" });
 
   await page.getByRole("button", { name: "New chat" }).click();
