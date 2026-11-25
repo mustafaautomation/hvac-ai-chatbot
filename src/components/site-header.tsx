@@ -1,52 +1,74 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { BrandMark } from "@/components/brand-mark";
 import { BRAND } from "@/lib/brand";
 import { cn } from "cn";
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const chat = pathname === "/chat" || pathname === "/widget";
+  const { resolvedTheme, setTheme } = useTheme();
+  const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    function onScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-20 border-b border-border/80 bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 lg:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground" aria-hidden>
-            <Mark />
+    <header className={cn("sticky top-0 z-30 h-16 border-b border-transparent", scrolled && "border-border bg-background/80 backdrop-blur-md")}>
+      <div className="mx-auto flex h-full max-w-6xl items-center gap-3 px-4 lg:px-6">
+        <Link href="/" className="flex min-w-0 items-center gap-2">
+          <span className="grid size-9 place-items-center rounded-full bg-accent text-accent-foreground">
+            <BrandMark className="size-5" strokeWidth={2} />
           </span>
-          <span className="min-w-0">
-            <span className="block truncate font-heading text-lg leading-none tracking-tight">Northwind Comfort</span>
-            <span className="mt-1 block text-xs text-muted-foreground">Heating &amp; Air · Austin</span>
-          </span>
+          <span className="truncate text-sm font-semibold tracking-tight">Northwind Comfort</span>
         </Link>
         <nav className="ml-auto flex items-center gap-1 text-sm">
-          <Link href="/" className={cn("rounded-full px-3 py-1.5", pathname === "/" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted")} aria-current={pathname === "/" ? "page" : undefined}>
-            Home
-          </Link>
-          <Link href="/chat" className={cn("rounded-full px-3 py-1.5", chat ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted")} aria-current={chat ? "page" : undefined}>
-            Chat
-          </Link>
-          <Link href="/embed-demo" className={cn("hidden rounded-full px-3 py-1.5 sm:inline", pathname === "/embed-demo" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted")}>
-            Widget
-          </Link>
-          <Link href="/admin" className={cn("rounded-full px-3 py-1.5", pathname.startsWith("/admin") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted")} aria-current={pathname.startsWith("/admin") ? "page" : undefined}>
-            Board
-          </Link>
-          <a href={`tel:${BRAND.phoneTel}`} className="hidden rounded-full px-3 py-1.5 text-muted-foreground hover:bg-muted sm:inline">
-            {BRAND.phoneDisplay}
-          </a>
+          <Nav href="/#how" current={false}>How it works</Nav>
+          <Nav href="/chat" current={pathname === "/chat"}>Live chat</Nav>
+          <Nav href="/admin" current={pathname.startsWith("/admin")}>Admin</Nav>
+          <Nav href="/embed-demo" current={pathname === "/embed-demo"}>Embed</Nav>
+          <button
+            type="button"
+            aria-label="Theme"
+            data-testid="theme-toggle"
+            className="grid size-9 place-items-center rounded-full hover:bg-muted"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          >
+            {mounted && resolvedTheme === "dark" ? <Sun className="size-4" strokeWidth={1.75} /> : <Moon className="size-4" strokeWidth={1.75} />}
+          </button>
+          <button
+            type="button"
+            className="hidden h-9 items-center rounded-full bg-accent px-3 text-[13px] font-medium text-accent-foreground sm:inline-flex"
+            onClick={() => window.dispatchEvent(new CustomEvent("northwind-open"))}
+          >
+            Open the desk
+          </button>
+          <a href={`tel:${BRAND.phoneTel}`} className="hidden text-xs text-muted-foreground lg:inline">{BRAND.phoneDisplay}</a>
         </nav>
       </div>
     </header>
   );
 }
 
-function Mark() {
+function Nav({ href, current, children }: { href: string; current: boolean; children: React.ReactNode }) {
   return (
-    <svg viewBox="0 0 32 32" className="size-6" fill="none">
-      <path d="M5 22c4.2-7 6.2-7 11 0s6.8 7 11 0" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="16" cy="11" r="3.2" fill="#e7a27a" />
-    </svg>
+    <Link href={href} aria-current={current ? "page" : undefined} className={cn("hidden rounded-full px-3 py-1.5 sm:inline", current ? "bg-accent-soft" : "hover:bg-muted")}>
+      {children}
+    </Link>
   );
 }

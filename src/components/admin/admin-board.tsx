@@ -298,31 +298,61 @@ function Handoffs({
 }
 
 function Inbox({ conversations, loading }: { conversations: Conversation[]; loading: boolean }) {
+  const [selectedId, setSelectedId] = useState(conversations[0]?.id ?? "");
+  const [resumed, setResumed] = useState<Record<string, boolean>>({});
+  const selected = conversations.find((conversation) => conversation.id === selectedId) ?? conversations[0];
   if (loading && conversations.length === 0) return <p className="text-sm text-muted-foreground">Loading conversations…</p>;
   if (conversations.length === 0) return <p className="text-sm text-muted-foreground">No conversations yet. A chat, a widget message, or a webhook shows up here with its tool calls.</p>;
   return (
-    <ul className="space-y-3">
-      {conversations.map((conversation) => (
-        <li key={conversation.id} className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-medium">{conversation.summary}</h2>
-            <Badge variant="outline">{conversation.channel}</Badge>
+    <div className="grid overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface md:grid-cols-[320px_minmax(0,1fr)]">
+      <ul className="max-h-[640px] divide-y divide-border overflow-y-auto border-b border-border md:border-r md:border-b-0">
+        {conversations.map((conversation) => (
+          <li key={conversation.id}>
+            <button
+              type="button"
+              onClick={() => setSelectedId(conversation.id)}
+              className={`w-full px-3 py-3 text-left ${conversation.id === selected?.id ? "bg-accent-soft" : "hover:bg-muted"}`}
+            >
+              <span className="block truncate text-sm font-medium">{conversation.summary}</span>
+              <span className="mt-1 block text-[11.5px] text-muted-foreground">{conversation.channel} · {formatWhen(conversation.updatedAt)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {selected ? (
+        <div className="flex max-h-[640px] flex-col">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold">{selected.summary}</h2>
+              <p className="text-[11.5px] text-muted-foreground">{selected.externalUser || selected.id}</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              data-testid="resume-bot"
+              onClick={() => {
+                localStorage.setItem("northwind-bot-paused", "false");
+                setResumed((current) => ({ ...current, [selected.id]: true }));
+              }}
+            >
+              Resume bot
+            </Button>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">{conversation.externalUser || conversation.id} · {formatWhen(conversation.updatedAt)}</p>
-          <ol className="mt-3 space-y-2 text-sm">
-            {conversation.messages.map((message, index) => (
-              <li key={`${conversation.id}-${index}`}>
+          <ol className="chat-scroll flex-1 space-y-3 overflow-y-auto px-4 py-4 text-sm">
+            {selected.messages.map((message, index) => (
+              <li key={`${selected.id}-${index}`}>
                 <span className="font-medium">{message.role === "user" ? "Caller" : "Desk"}: </span>
                 {message.text}
                 {message.tools && message.tools.length > 0 ? (
-                  <span className="mt-1 block text-xs text-muted-foreground">{message.tools.map((tool) => tool.name).join(" · ")}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{message.tools.map((tool) => `${tool.name} · ${tool.summary}`).join(" · ")}</span>
                 ) : null}
               </li>
             ))}
+            {resumed[selected.id] ? <li className="text-[13px] text-success">Bot resumed for this thread.</li> : null}
           </ol>
-        </li>
-      ))}
-    </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

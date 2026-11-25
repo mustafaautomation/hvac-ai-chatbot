@@ -17,6 +17,23 @@ export const BRAND = {
 export const DISCLAIMER =
   "Portfolio demo by Quvantic - fictional brand, not a real business / not client work";
 
+export const DESK = {
+  botName: "Ava",
+  brand: "Northwind Comfort",
+  role: "AI agent",
+  humanName: "Riley Cho",
+  humanRole: "human specialist",
+} as const;
+
+export const TEASER = "Furnace acting up? I can book a tech today.";
+
+export const METRICS = [
+  { value: "25", label: "KB guides" },
+  { value: "24", label: "evals in CI" },
+  { value: "10", label: "tools" },
+  { value: "Seconds", label: "Reply time" },
+] as const;
+
 export const SAMPLE_CUSTOMER = {
   name: "Alex Rivera",
   phone: "512-555-0142",
